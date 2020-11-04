@@ -4,30 +4,34 @@ from tensorflow.keras.models import load_model
 import os
 from helper.helper import *
 
-# loading data
-train, valid, test = load_data()
-# splitting data
-X_train, Y_train = split_data(train)
-X_valid, Y_valid = split_data(valid)
-X_test, Y_test = split_data(test)
-# shuffle
-X_train, Y_train = shuffle_data(X_train, Y_train)
-# to grayscale
-X_train = to_grayscale(X_train, axis=3)
-X_valid = to_grayscale(X_valid, axis=3)
-X_test = to_grayscale(X_test, axis=3)
-
-mean = X_train.mean(axis=(0, 1, 2), keepdims=True)  # mean
-std_deviation = X_train.std(axis=(0, 1, 2), keepdims=True)  # std.dev
-
-# normalize
-X_train = normalize(X_train, mean, std_deviation)
-X_test = normalize(X_test, mean, std_deviation)
-X_valid = normalize(X_valid, mean, std_deviation)
+mean = 0
+std_deviation = 0
 
 if os.path.isfile("savedModel"):
     model = load_model("savedModel")
+    file = open('statistics.txt', "r")
+    data = file.read()
+    idx = data.index(' ')
+    mean = [[[[float(data[:idx])]]]]
+    std_deviation = [[[[float(data[idx + 1:])]]]]
+    file.close()
 else:
+    train, valid, test = load_data()
+    X_train, Y_train = split_data(train)
+    X_valid, Y_valid = split_data(valid)
+    X_test, Y_test = split_data(test)
+    X_train, Y_train = shuffle_data(X_train, Y_train)
+    X_train = to_grayscale(X_train, axis=3)
+    X_valid = to_grayscale(X_valid, axis=3)
+    X_test = to_grayscale(X_test, axis=3)
+    mean = X_train.mean(axis=(0, 1, 2), keepdims=True)
+    std_deviation = X_train.std(axis=(0, 1, 2), keepdims=True)
+    file = open('statistics.txt', "w")
+    file.write(str(float(mean)) + " " + str(float(std_deviation)))
+    file.close()
+    X_train = normalize(X_train, mean, std_deviation)
+    X_test = normalize(X_test, mean, std_deviation)
+    X_valid = normalize(X_valid, mean, std_deviation)
     model = create_model(X_train, Y_train, X_valid, Y_valid)
     model.save('savedModel', save_format="h5")
 
@@ -77,7 +81,7 @@ Dictionary = [
     "End of no passing by vehicles over 3.5 metric tons"
 ]
 
-filename = "images/test.jpg"
+filename = "test-images/test3.jpg"
 img = Image.open(filename)
 img = img.resize((32, 32))
 img = to_grayscale(img, 2)
